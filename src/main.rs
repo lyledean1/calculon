@@ -68,6 +68,7 @@ fn compile(expr: Expr) {
         // common void type
         let void_type = LLVMVoidTypeInContext(context);
     
+        
 
         // our "main" function which will be the entry point when we run the executable
         let main_func_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
@@ -80,19 +81,31 @@ fn compile(expr: Expr) {
         // END MATCH
         // main's function body
 
+        //EXAMPLE
+        let value_index_ptr = LLVMBuildAlloca(builder, int32_type(), c_str!("value"));
+        let value_ptr_init = int32(32);
+        LLVMBuildStore(builder, value_ptr_init, value_index_ptr);
+
         // create string vairables and then function
-        let world_str = LLVMBuildGlobalStringPtr(builder, c_str!("world!"), c_str!(""));
-        let hello_world_str = LLVMBuildGlobalStringPtr(builder, c_str!("Value is %s\n"), c_str!(""));
-        let log_func_type = LLVMFunctionType(void_type, [int8_ptr_type()].as_mut_ptr(), 1, 1);
-        let log_func = LLVMAddFunction(module, c_str!("printf"), log_func_type);
-        let log_args = [hello_world_str, world_str].as_mut_ptr();
+        let value_is_str = LLVMBuildGlobalStringPtr(builder, c_str!("Value is %d\n"), c_str!(""));
+        let print_func_type = LLVMFunctionType(void_type, [int8_ptr_type()].as_mut_ptr(), 1, 1);
+        let print_func = LLVMAddFunction(module, c_str!("printf"), print_func_type);
+      
+        // Load Value from Value Index Ptr
+        let val = LLVMBuildLoad(
+            builder,
+            value_index_ptr,
+            c_str!("value"),
+        );
+    
+
+        let print_args = [value_is_str, val].as_mut_ptr();
         // calling `printf("Hello %s!", "world")`
-        LLVMBuildCall(builder, log_func, log_args, 2, c_str!(""));
+        LLVMBuildCall(builder, print_func, print_args, 2, c_str!(""));
 
 
 
         LLVMBuildRetVoid(builder);
-
         // write our bitcode file to arm64
         LLVMSetTarget(module, c_str!("arm64"));
         LLVMWriteBitcodeToFile(module, c_str!("bin/main.bc"));
