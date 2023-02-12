@@ -16,8 +16,19 @@ flowchart LR;
 
 ## Run
 
-Some examples are in the example folder, just run 
+Currently set up for arm64 (m1 Mac) with LLVM (13), [just change this line in the code to the required architecture](https://github.com/lyledean1/calculon/blob/main/src/main.rs#L97)
 
+Install LLVM 13
+```
+brew install llvm@13
+```
+
+Set LLVM_SYS_130_PREFIX variable before you run `cargo run`
+```
+export LLVM_SYS_130_PREFIX=/PATH/TO/LLVM13/VERSION
+```
+
+Some examples are in the example folder, just run 
 ```
 cargo run example/calculator.calculon
 ```
