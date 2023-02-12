@@ -87,18 +87,25 @@ fn compile(expr: Expr) {
         LLVMBuildStore(builder, value_ptr_init, value_index_ptr);
 
         // create string vairables and then function
-        let world_str = LLVMBuildGlobalStringPtr(builder, c_str!("world!"), c_str!(""));
-        let value_is_str = LLVMBuildGlobalStringPtr(builder, c_str!("Value is %ld\n"), c_str!(""));
+        let value_is_str = LLVMBuildGlobalStringPtr(builder, c_str!("Value is %d\n"), c_str!(""));
         let print_func_type = LLVMFunctionType(void_type, [int8_ptr_type()].as_mut_ptr(), 1, 1);
         let print_func = LLVMAddFunction(module, c_str!("printf"), print_func_type);
-        let print_args = [value_is_str, value_index_ptr].as_mut_ptr();
+      
+        // Load Value from Value Index Ptr
+        let val = LLVMBuildLoad(
+            builder,
+            value_index_ptr,
+            c_str!("value"),
+        );
+    
+
+        let print_args = [value_is_str, val].as_mut_ptr();
         // calling `printf("Hello %s!", "world")`
         LLVMBuildCall(builder, print_func, print_args, 2, c_str!(""));
 
 
 
         LLVMBuildRetVoid(builder);
-
         // write our bitcode file to arm64
         LLVMSetTarget(module, c_str!("arm64"));
         LLVMWriteBitcodeToFile(module, c_str!("bin/main.bc"));
