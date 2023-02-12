@@ -14,7 +14,7 @@ flowchart LR;
     LLVM-IR-->|clang| Binary;
 ```
 
-Going to extend this as a seperate language to include a more complex grammar. Keep this here with the simple language as it demonstrates high level what architecture is needed for a language that uses LLVM as the backend. 
+Going to extend this as a seperate language to include a more complex grammar. Keep this here with the simple language as it demonstrates high level what architecture is needed for a language that uses LLVM as the backend. And also extend the LLVM IR in the next iteration to do optimizations on the IR code! 
 
 ## Run
 
