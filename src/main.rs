@@ -62,6 +62,7 @@ fn compile(expr: Expr) {
 
         // common void type
         let void_type = LLVMVoidTypeInContext(context);
+
         // our "main" function which will be the entry point when we run the executable
         let main_func_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
         let main_func = LLVMAddFunction(module, c_str!("main"), main_func_type);
@@ -77,6 +78,7 @@ fn compile(expr: Expr) {
         // Set Value
         // create string vairables and then function
         // This is the Main Print Func 
+
         let value_is_str = LLVMBuildGlobalStringPtr(builder, c_str!("Value is %d\n"), c_str!(""));
         let print_func_type = LLVMFunctionType(void_type, [int8_ptr_type()].as_mut_ptr(), 1, 1);
         let print_func = LLVMAddFunction(module, c_str!("printf"), print_func_type);
