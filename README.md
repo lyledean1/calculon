@@ -1,6 +1,6 @@
 # Calculon
 
-Simple PoC using LALRPOP and llvm-sys for my own learning:
+Simple PoC language using LALRPOP and llvm-sys for my own learning (and anyone who is starting out with these tools) around LALRPOP and LLVM:
 - To parse a grammar, which in this case is a simple one line arithmetic i.e `((5*5) + 2)` using [LALRPOP](https://crates.io/crates/lalrpop) taken from this [tutorial](http://lalrpop.github.io/lalrpop/tutorial/004_full_expressions.html)
 - To then compile that to LLVM IR with [llvm-sys](https://crates.io/crates/llvm-sys)
 - To generate that from LLVM IR to a native executable using clang 
@@ -13,6 +13,8 @@ flowchart LR;
     CalculonCalculations-->|llvm-sys| LLVM-IR;
     LLVM-IR-->|clang| Binary;
 ```
+
+Going to extend this as a seperate language to include a more complex grammar. Keep this here with the simple language as it demonstrates high level what architecture is needed for a language that uses LLVM as the backend. 
 
 ## Run
 
