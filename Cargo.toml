@@ -1,0 +1,16 @@
+[package]
+name = "lingua"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs" # LALRPOP preprocessing
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+llvm-sys = "130.0.5"
+lalrpop-util = {version = "0.19.7", features = ["lexer"]}
+regex = "1"
+
+# Add a build-time dependency on the lalrpop library:
+[build-dependencies]
+lalrpop = "0.19.7"
