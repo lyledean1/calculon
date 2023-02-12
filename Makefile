@@ -4,9 +4,7 @@ build:
 
 .PHONY: run
 run:
-	cargo run example/calculator.lingua 
-	echo "Running bin/main file"
-	bin/main
+	cargo run example/calculator.calculon
 
 .PHONY: llvm-analyze
 llvm-analyze:

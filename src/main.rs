@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #[macro_use] extern crate lalrpop_util;
 extern crate llvm_sys;
 
@@ -6,14 +7,9 @@ use ast::Opcode;
 use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
-use llvm_sys::target::*;
-use llvm_sys::target_machine::*;
-use llvm_sys::transforms::pass_manager_builder::*;
-use llvm_sys::{LLVMBuilder, LLVMIntPredicate, LLVMModule};
 use std::ptr;
 use std::process::Command;
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_uint, c_ulonglong};
+use std::os::raw::{c_ulonglong};
 
 lalrpop_mod!(pub calculator); // synthesized by LALRPOP
 mod ast;
@@ -64,29 +60,23 @@ fn compile(expr: Expr) {
         let module = LLVMModuleCreateWithName(c_str!("main"));
         let builder = LLVMCreateBuilderInContext(context);
 
-        // START
         // common void type
         let void_type = LLVMVoidTypeInContext(context);
-    
-        
-
         // our "main" function which will be the entry point when we run the executable
         let main_func_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
         let main_func = LLVMAddFunction(module, c_str!("main"), main_func_type);
         let main_block = LLVMAppendBasicBlockInContext(context, main_func, c_str!("main"));
         LLVMPositionBuilderAtEnd(builder, main_block);
 
-        // START MATCH
-        match_expr(expr);
-        // END MATCH
-        // main's function body
-
-        //EXAMPLE
+        // Set initial value for calculator
         let value_index_ptr = LLVMBuildAlloca(builder, int32_type(), c_str!("value"));
-        let value_ptr_init = int32(32);
+        let calculated_value = match_expr(expr);
+        // First thing is to set initial value
+        let value_ptr_init = int32(calculated_value.try_into().unwrap());
         LLVMBuildStore(builder, value_ptr_init, value_index_ptr);
-
+        // Set Value
         // create string vairables and then function
+        // This is the Main Print Func 
         let value_is_str = LLVMBuildGlobalStringPtr(builder, c_str!("Value is %d\n"), c_str!(""));
         let print_func_type = LLVMFunctionType(void_type, [int8_ptr_type()].as_mut_ptr(), 1, 1);
         let print_func = LLVMAddFunction(module, c_str!("printf"), print_func_type);
@@ -98,13 +88,8 @@ fn compile(expr: Expr) {
             c_str!("value"),
         );
     
-
         let print_args = [value_is_str, val].as_mut_ptr();
-        // calling `printf("Hello %s!", "world")`
         LLVMBuildCall(builder, print_func, print_args, 2, c_str!(""));
-
-
-
         LLVMBuildRetVoid(builder);
         // write our bitcode file to arm64
         LLVMSetTarget(module, c_str!("arm64"));
@@ -124,43 +109,50 @@ fn compile(expr: Expr) {
     .output()
     .expect("Failed to execute clang with main.bc file");
 
-    println!("main executable generated, run with ./main")
-    
+    println!("main executable generated, running bin/main");
+    let output = Command::new("bin/main")
+    .output()
+    .expect("Failed to execute clang with main.bc file");
+    println!("calculon output: {}", String::from_utf8_lossy(&output.stdout));
 }
 
 fn unbox<T>(value: Box<T>) -> T {
     *value
 }
 
-fn match_op(lhs: Expr, value: Opcode, rhs: Expr) {
-    // only set if lhs is not a number as this will be set in second lhs
-    match rhs {
-        Expr::Number(rhs) => {
-            match lhs {
-                Expr::Number(_) => {},
-                _ => {println!("Setting x {:?} {:?}, where x is {:?}", value, rhs, lhs)
-            },
+// Depth first traversal of AST node using pre-order traversal strategy
+fn match_expr(expr: Expr) -> i32 {
+    match expr {
+        Expr::Number(num) => {
+            return num;
+        }
+        Expr::Op(lhs, op , rhs) => {
+            match op {
+                Opcode::Mul => {
+                    let l = match_expr(unbox(lhs));
+                    let r = match_expr(unbox(rhs));
+                    return l*r;
+                }
+                Opcode::Div => {
+                    let l = match_expr(unbox(lhs));
+                    let r = match_expr(unbox(rhs));
+                    return l/r;
+                }
+                Opcode::Add => {
+                    let l = match_expr(unbox(lhs));
+                    let r = match_expr(unbox(rhs));
+                    return l+r;
+                },
+                Opcode::Sub => {
+                    let l = match_expr(unbox(lhs));
+                    let r = match_expr(unbox(rhs));
+                    return l+r;
+                },
             }
+        }
+        Expr::Error => {
+            return 0;
         },
-        _ => {},
-    }
-    match lhs {
-        Expr::Number(lhs) => {set_value(ast::Expr::Number(lhs), value, rhs)},
-        Expr::Op(lhs, op , rhs) => {match_op(unbox(lhs), op, unbox(rhs))}
-        Expr::Error => {},
-    }
-}
-
-fn set_value(value: Expr, opcode: Opcode, lhs: Expr) {
-    println!("Setting lhs ({:?} {:?} {:?})", value, opcode, lhs)
-}
-
-fn match_expr(value: Expr) {
-    match value {
-        // If code is just one value and not an expression
-        Expr::Number(_) => {println!("setting two {:?}", value)}
-        Expr::Op(lhs, op , rhs) => {match_op(unbox(lhs), op, unbox(rhs))}
-        Expr::Error => {},
     }
 }
 
@@ -172,7 +164,9 @@ fn parse(path: String) {
 
     match expr {
         Ok(expr) => {compile(unbox(expr))}
-        Err(_) => {}
+        Err(err) => {
+            println!("error {:?}", err);
+        }
     }
 }
 
@@ -180,7 +174,7 @@ fn main() {
     let path = std::env::args().skip(1).next();
 
     match path {
-        None => println!("interpreter"),
+        None => println!("REPL"),
         Some(path) => parse(path),
     }
 }
